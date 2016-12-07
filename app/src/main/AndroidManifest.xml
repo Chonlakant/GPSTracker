@@ -12,7 +12,6 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <!--<activity android:name=".MainActivity"></activity>-->
         <service android:name=".TrackingService" />
         <activity
             android:name=".NavigationDrawer"

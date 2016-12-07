@@ -17,15 +17,12 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 
-import java.util.ArrayList;
-
-import pwr.chojnacki.robert.gpstracker.TrackingDatabase.*;
-
 public class TrackingService extends Service implements LocationListener {
-    private static final int MIN_DISTANCE_DIFFERENCE = 10; // 10 meters
-    private static final int INTERVAL = 1000 * 15 * 1; // 1 minute
+    private static int MIN_DISTANCE_DIFFERENCE = 10; // 10 meters
+    private static int INTERVAL = 1000 * 30 * 1; // 30 seconds
     private static TrackingDatabase db;
     private final Context context;
+    protected LocationManager locationManager;
     private Location location;
     private double latitude;
     private double longitude;
@@ -33,12 +30,14 @@ public class TrackingService extends Service implements LocationListener {
     private boolean isNetworkEnabled = false;
     private boolean isWorking = false;
 
-    protected LocationManager locationManager;
+    public TrackingService() {
+        context = this;
+    }
 
     public TrackingService(Context c) {
         super();
         this.context = c;
-        db.init(c);
+        TrackingDatabase.init(c);
         startService();
     }
 
@@ -57,7 +56,7 @@ public class TrackingService extends Service implements LocationListener {
                 if (isGPSEnabled) {
                     this.isWorking = true;
                     locationManager.requestLocationUpdates(
-                            locationManager.GPS_PROVIDER,
+                            LocationManager.GPS_PROVIDER,
                             INTERVAL,
                             MIN_DISTANCE_DIFFERENCE,
                             this);
@@ -159,7 +158,7 @@ public class TrackingService extends Service implements LocationListener {
     @Override
     public void onLocationChanged(Location location) {
         this.location = location;
-        db.insert(location.getLatitude(), location.getLongitude());
+        TrackingDatabase.insert(location.getLatitude(), location.getLongitude());
         Log.d("TrackingService", "Received location update");
         //ArrayList<TrackingRecordClass> result = db.select();
         //Log.d("TrackingService", "Record " + result.get(0).id);
