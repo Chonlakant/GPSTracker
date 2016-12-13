@@ -4,10 +4,8 @@ import android.Manifest;
 import android.app.FragmentManager;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -15,29 +13,47 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
-public class NavigationDrawer extends AppCompatActivity
+public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-    private TrackingService ts;
+    public static TrackingService tracking_service;
+    private FragmentManager fragment_manager;
+
+
+    private void init() {
+    // Init
+    tracking_service = new TrackingService(MainActivity.this);
+    fragment_manager = getFragmentManager();
+
+    if (tracking_service.isWorking()) {
+        //Toast.makeText(this, "It's working :)", Toast.LENGTH_LONG).show();
+        double latitude = tracking_service.getLatitude();
+        double longitude = tracking_service.getLongitude();
+
+        Toast.makeText(getApplicationContext(), "Your location is - \nLat: " + latitude + "\nLong: " + longitude, Toast.LENGTH_LONG).show();
+    } else {
+        Toast.makeText(this, "It's not working!", Toast.LENGTH_LONG).show();
+    }
+}
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_navigation_drawer);
-
+        setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
-        });
+        });*/
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -48,13 +64,23 @@ public class NavigationDrawer extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        ActivityCompat.requestPermissions(this,
-                new String[]{
-                        Manifest.permission.INTERNET,
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                },
-                1001);
+        // Check permissions
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+            // Ask for permissions
+            ActivityCompat.requestPermissions(this,
+                    new String[]{
+                            Manifest.permission.INTERNET,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                    },
+                    1001);
+        } else {
+            // Init app
+            init();
+        }
+
     }
 
     @Override
@@ -70,7 +96,7 @@ public class NavigationDrawer extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.navigation_drawer, menu);
+        //getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
@@ -79,13 +105,11 @@ public class NavigationDrawer extends AppCompatActivity
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
+        /*int id = item.getItemId();
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
-        }
-
+        }*/
         return super.onOptionsItemSelected(item);
     }
 
@@ -94,18 +118,17 @@ public class NavigationDrawer extends AppCompatActivity
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-        FragmentManager fragmentManager = getFragmentManager();
-        if (id == R.id.nav_camera) {
-            //fragmentManager.beginTransaction().replace(R.id.content_frame, new MapFragment()).commit();
-        } else if (id == R.id.nav_gallery) {
-            fragmentManager.beginTransaction().replace(R.id.content_frame, new ListFragment()).commit();
-        } else if (id == R.id.nav_slideshow) {
-            fragmentManager.beginTransaction().replace(R.id.content_frame, new SettingsFragment()).commit();
-        } else if (id == R.id.nav_manage) {
 
-        } else if (id == R.id.nav_share) {
+        if (id == R.id.nav_map) {
+        } else if (id == R.id.nav_list) {
+            fragment_manager.beginTransaction().replace(R.id.content_frame, new ListFragment()).commit();
+        } else if (id == R.id.nav_settings) {
+            fragment_manager.beginTransaction().replace(R.id.content_frame, new SettingsFragment()).commit();
+        } else if (id == R.id.nav_start) {
 
-        } else if (id == R.id.nav_send) {
+        } else if (id == R.id.nav_stop) {
+
+        } else if (id == R.id.nav_clear) {
 
         }
 
@@ -119,21 +142,11 @@ public class NavigationDrawer extends AppCompatActivity
         if (requestCode == 1001) {
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                ts = new TrackingService(NavigationDrawer.this);
-                if (ts.isWorking()) {
-                    //Toast.makeText(this, "It's working :)", Toast.LENGTH_LONG).show();
-                    double latitude = ts.getLatitude();
-                    double longitude = ts.getLongitude();
-
-                    Toast.makeText(getApplicationContext(), "Your location is - \nLat: " + latitude + "\nLong: " + longitude, Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(this, "It's not working!", Toast.LENGTH_LONG).show();
-                }
+                // Start app
+                init();
             } else {
-                Toast.makeText(this, "No permissions!", Toast.LENGTH_LONG).show();
-                return;
+                Toast.makeText(this, "No permissions! Close and run app again!", Toast.LENGTH_LONG).show();
             }
-            //ts.stopService();
         }
     }
 }

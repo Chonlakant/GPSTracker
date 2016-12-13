@@ -18,135 +18,186 @@ import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 
 public class TrackingService extends Service implements LocationListener {
-    private static int MIN_DISTANCE_DIFFERENCE = 10; // 10 meters
-    private static int INTERVAL = 1000 * 30 * 1; // 30 seconds
     private static TrackingDatabase db;
-    private final Context context;
-    protected LocationManager locationManager;
-    private Location location;
-    private double latitude;
-    private double longitude;
-    private boolean isGPSEnabled = false;
-    private boolean isNetworkEnabled = false;
-    private boolean isWorking = false;
+    protected static int MIN_DISTANCE_DIFFERENCE = 10; // 10 meters
+    protected static int INTERVAL = 1000 * 10; // 0 seconds
+    protected final Context context;
+    protected LocationManager location_manager = null;
+    protected Location location = null;
+    protected boolean is_working = false;
+    protected boolean is_gps_enabled = false;
+    protected boolean is_network_enabled = false;
+
+    public TrackingService(Context context) {
+        super();
+        this.context = context;
+        db.init(context);
+        //this.start();
+    }
 
     public TrackingService() {
-        context = this;
-    }
-
-    public TrackingService(Context c) {
         super();
-        this.context = c;
-        TrackingDatabase.init(c);
-        startService();
+        this.context = null;
+        db.init(context);
+        this.start();
     }
 
-    public void startService() {
+    public void setInternal(int interval) {
+        if (!this.is_working && interval > 0)
+            this.INTERVAL = interval;
+    }
+
+    public int getInterval() {
+        return this.INTERVAL;
+    }
+
+    public void setMinDistanceDifference(int min_distance) {
+        if (!this.is_working && min_distance > 0)
+            this.MIN_DISTANCE_DIFFERENCE = min_distance;
+    }
+
+    public int getMinDistanceDifference() {
+        return this.MIN_DISTANCE_DIFFERENCE;
+    }
+
+    // Insert new location into database
+    protected void insertLocationToDatabase() {
         try {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(context, Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED) {
-                // Get location manager
-                locationManager = (LocationManager) context.getSystemService(LOCATION_SERVICE);
-                Log.d("TrackingService", "Available providers: " + locationManager.getAllProviders().toString());
-                // Get GPS provider status
-                isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-                // Get network provider status
-                isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-                if (isGPSEnabled) {
-                    this.isWorking = true;
-                    locationManager.requestLocationUpdates(
-                            LocationManager.GPS_PROVIDER,
-                            INTERVAL,
-                            MIN_DISTANCE_DIFFERENCE,
-                            this);
-                    Log.d("TrackingService", "Using GPS provider");
-                    if (locationManager != null) {
-                        location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                        latitude = location.getLatitude();
-                        longitude = location.getLongitude();
-                    }
-                }
-                else if (isNetworkEnabled) {
-                    this.isWorking = true;
-                    locationManager.requestLocationUpdates(
-                            LocationManager.NETWORK_PROVIDER,
-                            INTERVAL,
-                            MIN_DISTANCE_DIFFERENCE, this);
-                    Log.d("TrackingService", "Using network provider");
-                    if (locationManager != null) {
-                        location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                        if (location != null) {
-                            latitude = location.getLatitude();
-                            longitude = location.getLongitude();
-                        }
-                    }
-                }
+            if (this.location != null) {
+                long result = db.insert(this.location.getLatitude(), this.location.getLongitude());
+                if (result > 0)
+                    Log.i("TrackingService", "Location saved to database");
             }
-        } catch(Exception e) {
-            isWorking = false;
-            location = null;
-            Log.d("TrackingService", "Cannot start the service");
+        } catch (Exception e) {
+            Log.e("TrackingService", "Cannot save location to database");
+            Log.e("TrackingService", e.getMessage());
+    }
+    }
+
+    // Get new or replace location manager
+    protected void setLocationManager() {
+        if (ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this.context, Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED) {
+            // Get location manager
+            this.location_manager = (LocationManager) this.context.getSystemService(LOCATION_SERVICE);
+            Log.i("TrackingService", "Available providers: " + this.location_manager.getAllProviders().toString());
+
+            // Get GPS provider status
+            this.is_gps_enabled = this.location_manager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            // Get network provider status
+            this.is_network_enabled = this.location_manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+
+            if (this.is_gps_enabled) {
+                // Request location updates from GPS provider
+                this.location_manager.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER,
+                        this.INTERVAL,
+                        this.MIN_DISTANCE_DIFFERENCE,
+                        this);
+                Log.i("TrackingService", "Using GPS provider");
+                this.location = this.location_manager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            } else if (this.is_network_enabled) {
+                // Request location updates from network provider
+                this.location_manager.requestLocationUpdates(
+                        LocationManager.NETWORK_PROVIDER,
+                        this.INTERVAL,
+                        this.MIN_DISTANCE_DIFFERENCE,
+                        this);
+                Log.i("TrackingService", "Using network provider");
+                this.location = this.location_manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
         }
     }
 
-    public void stopService() {
+    // Start service
+    public void start() {
         try {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(context, Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED) {
-                if (locationManager != null) {
-                    isWorking = false;
-                    locationManager.removeUpdates(TrackingService.this);
+            this.setLocationManager();
+            insertLocationToDatabase();
+            this.is_working = true;
+            Log.i("TrackingService", "Background service started");
+        } catch (Exception e) {
+            this.is_working = false;
+            this.location = null;
+            Log.e("TrackingService", "Cannot start the background service");
+            Log.e("TrackingService", e.getMessage());
+        }
+    }
+
+    // Stop service
+    public void stop() {
+        try {
+            if (ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this.context, Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED) {
+                if (this.is_working) {
+                    this.location_manager.removeUpdates(TrackingService.this);
                 }
+                this.is_working = false;
+                this.location = null;
+                Log.i("TrackingService", "Background service stopped");
             }
-        } catch(Exception e) {
-            isWorking = true;
-            Log.d("Tracking service", "Cannot stop the service");
+        } catch (Exception e) {
+            Log.e("TrackingService", "Cannot stop the background service");
+            Log.e("TrackingService", e.getMessage());
         }
-
     }
 
-    public Location getLocation() {
-        return location;
-    }
-
-    public double getLatitude() {
-        if (location != null) {
-            latitude = location.getLatitude();
-        }
-        return latitude;
-    }
-
-    public double getLongitude() {
-        if (location != null) {
-            longitude = location.getLongitude();
-        }
-        return longitude;
-    }
-
+    // Show location settings alert
     public void showSettingsAlert() {
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(context);
-        alertDialog.setTitle("GPS settings");
-        alertDialog.setMessage("GPS is not enabled. Do you want to go to settings menu?");
-        // on pressing settings button
-        alertDialog.setPositiveButton("Settings", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                context.startActivity(intent);
-            }
-        });
-        // on pressing cancel button
-        alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
-        alertDialog.show();
+        try {
+            AlertDialog.Builder alertDialog = new AlertDialog.Builder(this.context);
+            alertDialog.setTitle("Location settings");
+            alertDialog.setMessage("Location service is not enabled. Do you want to go to settings menu?");
+            // On pressing settings button
+            alertDialog.setPositiveButton("Settings", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    // Start settings activity
+                    Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    context.startActivity(intent);
+                }
+            });
+            // On pressing canel button
+            alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    // Close alert
+                    dialog.cancel();
+                }
+            });
+            alertDialog.show();
+        } catch (Exception e) {
+            Log.e("TrackingService", "Cannot show location settings alert");
+            Log.e("TrackingService", e.getMessage());
+        }
     }
 
+    // Get latest location
+    public Location getLocation() {
+        return this.location;
+    }
+
+    // Get latest latitude
+    public double getLatitude() {
+        if (this.location != null) {
+            return this.location.getLatitude();
+        } else {
+            return 0.0;
+        }
+    }
+
+    // Get latest longitude
+    public double getLongitude() {
+        if (this.location != null) {
+            return this.location.getLongitude();
+        } else {
+            return 0.0;
+        }
+    }
+
+    // Get service status
     public boolean isWorking() {
-        return isWorking;
+        return this.is_working;
     }
 
     @Nullable
@@ -158,36 +209,49 @@ public class TrackingService extends Service implements LocationListener {
     @Override
     public void onLocationChanged(Location location) {
         this.location = location;
-        TrackingDatabase.insert(location.getLatitude(), location.getLongitude());
-        Log.d("TrackingService", "Received location update");
-        //ArrayList<TrackingRecordClass> result = db.select();
-        //Log.d("TrackingService", "Record " + result.get(0).id);
+        this.insertLocationToDatabase();
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        String s = "UNKNOWN";
+        String status_str = "UNKNOWN";
         switch(status) {
             case 0:
-                s = "OUT_OF_SERVICE";
+                status_str = "OUT_OF_SERVICE";
                 break;
             case 1:
-                s = "TEMPORARILY_UNAVAILABLE";
+                status_str = "TEMPORARILY_UNAVAILABLE";
                 break;
             case 2:
-                s = "AVAILABLE";
+                status_str = "AVAILABLE";
                 break;
         }
-        Log.d("TrackingService", "Provider " + provider + " has changed status to: " + s);
+        Log.i("TrackingService", "Provider " + provider + " has changed status to: " + status_str);
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-        Log.d("TrackingService", "Provider " + provider + " is now enabled");
+        Log.i("TrackingService", "Provider " + provider + " is now enabled");
+        try {
+            if (is_working) {
+                this.setLocationManager();
+            }
+        } catch (Exception e) {
+            Log.e("TrackingService", "Cannot update location manager");
+            Log.e("TrackingService", e.getMessage());
+        }
     }
 
     @Override
     public void onProviderDisabled(String provider) {
-        Log.d("TrackingService", "Provider " + provider + " is now disabled");
+        Log.i("TrackingService", "Provider " + provider + " is now disabled");
+        try {
+            if (is_working) {
+                this.setLocationManager();
+            }
+        } catch (Exception e) {
+            Log.e("TrackingService", "Cannot update location manager");
+            Log.e("TrackingService", e.getMessage());
+        }
     }
 }

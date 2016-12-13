@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 import android.util.Log;
+
 import java.util.ArrayList;
 
 public final class TrackingDatabase {
@@ -27,7 +28,6 @@ public final class TrackingDatabase {
                     TrackingRecord.COLUMN_NAME_TIME + TIME_TYPE + TIME_PARAMS + SEPARATOR +
                     TrackingRecord.COLUMN_NAME_LATITUDE + DOUBLE_TYPE + DOUBLE_PARAMS + SEPARATOR +
                     TrackingRecord.COLUMN_NAME_LONGITUDE + DOUBLE_TYPE + DOUBLE_PARAMS + ");";
-
     private static final String SQL_DELETE_ENTRIES =
             "DROP TABLE IF EXISTS " + TrackingRecord.TABLE_NAME;
 
@@ -41,8 +41,8 @@ public final class TrackingDatabase {
     public static ArrayList<TrackingRecordClass> select() {
         ArrayList<TrackingRecordClass> result = new ArrayList<>();
         if (helper != null) {
-            // Gets the data repository in write mode
-            db = helper.getWritableDatabase();
+            // Get the database in read mode
+            db = helper.getReadableDatabase();
             String[] projection = {
                     TrackingRecord._ID,
                     TrackingRecord.COLUMN_NAME_DATE,
@@ -50,8 +50,6 @@ public final class TrackingDatabase {
                     TrackingRecord.COLUMN_NAME_LATITUDE,
                     TrackingRecord.COLUMN_NAME_LONGITUDE
             };
-            //String selection = FeedEntry.COLUMN_NAME_TITLE + " = ?";
-            //String[] selectionArgs = { "My Title" };
             String sortOrder = TrackingRecord._ID + " DESC";
 
             Cursor c = db.query(
@@ -77,13 +75,14 @@ public final class TrackingDatabase {
             c.close();
             return result;
         } else {
+            Log.e("TrackingDatabase", "Helper class not initialized");
             return null;
         }
     }
 
     public static long insert(double latitude, double longitude) {
         if (helper != null) {
-            // Gets the data repository in write mode
+            // Get the database in write mode
             db = helper.getWritableDatabase();
             // Create a new map of values, where column names are the keys
             ContentValues values = new ContentValues();
@@ -93,28 +92,27 @@ public final class TrackingDatabase {
             long newRowId = db.insert(TrackingRecord.TABLE_NAME, null, values);
             return newRowId;
         } else {
-            Log.d("TrackingDatabase", "helper class not initialized");
+            Log.e("TrackingDatabase", "Helper class not initialized");
             return -1;
         }
     }
 
     public static long delete(long id) {
         if (helper != null) {
-            // Gets the data repository in write mode
+            // Get the database in write mode
             db = helper.getWritableDatabase();
-            // Define 'where' part of query.
+            // Define 'where' part of query
             String selection = "_ID=?";
-            // Specify arguments in placeholder order.
+            // Specify arguments in placeholder order
             String[] selectionArgs = { String.valueOf(id) };
-            // Issue SQL statement.
+            // Issue SQL statement
             long deletedRowId = db.delete(TrackingRecord.TABLE_NAME, selection, selectionArgs);
             return deletedRowId;
         } else {
-            Log.d("TrackingDatabase", "helper class not initialized");
+            Log.e("TrackingDatabase", "Helper class not initialized");
             return -1;
         }
     }
-
 
     /* Inner class that defines the table contents */
     public static class TrackingRecord implements BaseColumns {
@@ -161,3 +159,4 @@ public final class TrackingDatabase {
         }
     }
 }
+

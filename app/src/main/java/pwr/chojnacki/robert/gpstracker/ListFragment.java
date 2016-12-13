@@ -3,47 +3,85 @@ package pwr.chojnacki.robert.gpstracker;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 
 import java.util.ArrayList;
 
 public class ListFragment extends Fragment {
     private static TrackingDatabase db;
-    public View myView;
+    private View my_view;
     private ListView list;
     private ArrayAdapter<String> adapter;
+    private Button buttonClear;
+
+    // Strip int after 2 digits
+    private String strip_int(int i) {
+        try {
+            String s = String.valueOf(i);
+            String r = "";
+            if (s.length() > 1) {
+                r = "" + s.charAt(0) + s.charAt(1);
+            } else {
+                r = "" + s.charAt(0);
+            }
+            return r;
+        } catch (Exception e) {
+            Log.e("ListFragment", "Integer parsing error");
+            Log.e("ListFragment", e.getMessage());
+            return null;
+        }
+    }
+
+    // Converting decimal coordinates to degrees
+    private String convert(double latitude, double longitude) {
+        final String DEGREE = "\u00b0";
+        int lat_d = (int) latitude;
+        int lat_m = (int) ((latitude - lat_d) * 60);
+        int lat_s = (int) (latitude - lat_d - lat_m) * 3600;
+        int lng_d = (int) longitude;
+        int lng_m = (int) ((longitude - lng_d) * 60);
+        int lng_s = (int) (longitude - lng_d - lng_m) * 3600;
+        String lat_symbol, lng_symbol, result;
+
+        if (latitude >= 0)
+            lat_symbol = "N";
+        else
+            lat_symbol = "S";
+        if (longitude >= 0)
+            lng_symbol = "E";
+        else
+            lng_symbol = "W";
+
+        result = "" + Math.abs(lat_d) + DEGREE + " " + strip_int(Math.abs(lat_m)) + "' " + strip_int(Math.abs(lat_s)) + "'' " + lat_symbol;
+        result += ",  " + Math.abs(lng_d) + DEGREE + " " + strip_int(Math.abs(lng_m)) + "' " + strip_int(Math.abs(lng_s)) + "'' " + lng_symbol;
+
+        return result;
+    }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        myView = inflater.inflate(R.layout.fragment_list, container, false);
-        list = (ListView) myView.findViewById(R.id.tracking_list);
-        TrackingDatabase.init(getContext());
+        my_view = inflater.inflate(R.layout.fragment_list, container, false);
+        list = (ListView) my_view.findViewById(R.id.list);
+
+        db.init(getContext());
+
         ArrayList<TrackingDatabase.TrackingRecordClass> result = TrackingDatabase.select();
-        //Log.d("ListFragment", "Record " + result.get(0).id);
         ArrayList<String> list_items = new ArrayList<String>();
         for (TrackingDatabase.TrackingRecordClass r : result) {
-            String lat_symbol, long_symbol;
-            if (r.latitude >= 0)
-                lat_symbol = "N";
-            else
-                lat_symbol = "S";
-            if (r.longitude >= 0)
-                long_symbol = "W";
-            else
-                long_symbol = "E";
-            list_items.add(r.date + " " + r.time + ", " + r.latitude + " " + lat_symbol + ", " + r.longitude + " " + long_symbol);
+            list_items.add(r.time + ",   " + this.convert(r.latitude, r.longitude));
         }
 
         adapter = new ArrayAdapter<String>(getActivity(), R.layout.fragment_list_item, list_items);
         list.setAdapter(adapter);
-        return myView;
-        //return super.onCreateView(inflater, container, savedInstanceState);
 
+        return my_view;
     }
 
 }
