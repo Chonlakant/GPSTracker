@@ -7,13 +7,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.Toast;
-
-import java.util.ArrayList;
 
 public class SettingsFragment extends Fragment {
     private View my_view;
@@ -23,14 +19,14 @@ public class SettingsFragment extends Fragment {
 
     public SettingsFragment() {
         super();
-        tracking_service = MainActivity.tracking_service;
+        tracking_service = MainActivity.getTS();
     }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, final ViewGroup container, Bundle savedInstanceState) {
+        MainActivity.setToolbarTitle("Settings");
         my_view = inflater.inflate(R.layout.fragment_settings, container, false);
-
         buttonSettings = (Button) my_view.findViewById(R.id.buttonSettings);
         editInterval = (EditText) my_view.findViewById(R.id.editInterval);
         editDifference = (EditText) my_view.findViewById(R.id.editDifference);
@@ -42,7 +38,7 @@ public class SettingsFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (tracking_service.is_working) {
-                    Toast.makeText(container.getContext(), "You must stop tracking first.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(container.getContext(), "Please turn off tracking first.", Toast.LENGTH_LONG).show();
                 } else {
                     try {
                         int diff = Integer.valueOf(editDifference.getText().toString());
@@ -58,5 +54,11 @@ public class SettingsFragment extends Fragment {
         });
 
         return my_view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        MainActivity.setToolbarTitle("Settings");
     }
 }

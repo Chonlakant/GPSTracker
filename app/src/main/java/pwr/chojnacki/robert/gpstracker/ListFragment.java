@@ -20,11 +20,14 @@ public class ListFragment extends Fragment {
     private ArrayAdapter<String> adapter;
     private Button buttonClear;
 
+    public ListFragment() {
+        super();
+    }
     // Strip int after 2 digits
     private String strip_int(int i) {
         try {
             String s = String.valueOf(i);
-            String r = "";
+            String r;
             if (s.length() > 1) {
                 r = "" + s.charAt(0) + s.charAt(1);
             } else {
@@ -67,21 +70,29 @@ public class ListFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        MainActivity.setToolbarTitle("List");
         my_view = inflater.inflate(R.layout.fragment_list, container, false);
         list = (ListView) my_view.findViewById(R.id.list);
 
-        db.init(getContext());
+        TrackingDatabase.init(getContext());
 
         ArrayList<TrackingDatabase.TrackingRecordClass> result = TrackingDatabase.select();
-        ArrayList<String> list_items = new ArrayList<String>();
-        for (TrackingDatabase.TrackingRecordClass r : result) {
-            list_items.add(r.time + ",   " + this.convert(r.latitude, r.longitude));
+        ArrayList<String> list_items = new ArrayList<>();
+        if (result != null) {
+            for (TrackingDatabase.TrackingRecordClass r : result) {
+                list_items.add(r.time + ",   " + this.convert(r.latitude, r.longitude));
+            }
         }
 
-        adapter = new ArrayAdapter<String>(getActivity(), R.layout.fragment_list_item, list_items);
+        adapter = new ArrayAdapter<>(getActivity(), R.layout.fragment_list_item, list_items);
         list.setAdapter(adapter);
 
         return my_view;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        MainActivity.setToolbarTitle("List");
+    }
 }

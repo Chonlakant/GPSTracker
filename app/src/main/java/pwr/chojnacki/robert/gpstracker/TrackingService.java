@@ -18,9 +18,9 @@ import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 
 public class TrackingService extends Service implements LocationListener {
-    private static TrackingDatabase db;
     protected static int MIN_DISTANCE_DIFFERENCE = 10; // 10 meters
-    protected static int INTERVAL = 1000 * 10; // 0 seconds
+    protected static int INTERVAL = 1000 * 10; // 10 seconds
+    private static TrackingDatabase db;
     protected final Context context;
     protected LocationManager location_manager = null;
     protected Location location = null;
@@ -31,40 +31,38 @@ public class TrackingService extends Service implements LocationListener {
     public TrackingService(Context context) {
         super();
         this.context = context;
-        db.init(context);
-        //this.start();
+        TrackingDatabase.init(context);
     }
 
     public TrackingService() {
         super();
         this.context = null;
-        db.init(context);
-        this.start();
+        TrackingDatabase.init(context);
     }
 
     public void setInternal(int interval) {
         if (!this.is_working && interval > 0)
-            this.INTERVAL = interval;
+            INTERVAL = interval;
     }
 
     public int getInterval() {
-        return this.INTERVAL;
+        return INTERVAL;
+    }
+
+    public int getMinDistanceDifference() {
+        return MIN_DISTANCE_DIFFERENCE;
     }
 
     public void setMinDistanceDifference(int min_distance) {
         if (!this.is_working && min_distance > 0)
-            this.MIN_DISTANCE_DIFFERENCE = min_distance;
-    }
-
-    public int getMinDistanceDifference() {
-        return this.MIN_DISTANCE_DIFFERENCE;
+            MIN_DISTANCE_DIFFERENCE = min_distance;
     }
 
     // Insert new location into database
     protected void insertLocationToDatabase() {
         try {
             if (this.location != null) {
-                long result = db.insert(this.location.getLatitude(), this.location.getLongitude());
+                long result = TrackingDatabase.insert(this.location.getLatitude(), this.location.getLongitude());
                 if (result > 0)
                     Log.i("TrackingService", "Location saved to database");
             }
@@ -92,8 +90,8 @@ public class TrackingService extends Service implements LocationListener {
                 // Request location updates from GPS provider
                 this.location_manager.requestLocationUpdates(
                         LocationManager.GPS_PROVIDER,
-                        this.INTERVAL,
-                        this.MIN_DISTANCE_DIFFERENCE,
+                        INTERVAL,
+                        MIN_DISTANCE_DIFFERENCE,
                         this);
                 Log.i("TrackingService", "Using GPS provider");
                 this.location = this.location_manager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -101,8 +99,8 @@ public class TrackingService extends Service implements LocationListener {
                 // Request location updates from network provider
                 this.location_manager.requestLocationUpdates(
                         LocationManager.NETWORK_PROVIDER,
-                        this.INTERVAL,
-                        this.MIN_DISTANCE_DIFFERENCE,
+                        INTERVAL,
+                        MIN_DISTANCE_DIFFERENCE,
                         this);
                 Log.i("TrackingService", "Using network provider");
                 this.location = this.location_manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
