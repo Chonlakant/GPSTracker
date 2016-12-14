@@ -25,16 +25,15 @@ public class ListFragment extends Fragment {
     private Button buttonRefresh;
     private TextView textDistance;
     private TextView textSpeed;
-    private TextView textSteps;
 
     public ListFragment() {
         super();
     }
 
     // Round to first decimal place
-    double RoundTo1Decimal(double val) {
+    String RoundTo1Decimal(double val) {
         DecimalFormat df1 = new DecimalFormat("###.#");
-        return Double.valueOf(df1.format(val));
+        return String.valueOf(df1.format(val));
     }
 
     // Calculate distance between two locations
@@ -53,12 +52,12 @@ public class ListFragment extends Fragment {
     // Ceil double from string to make int
     private String strip_int(String s) {
         try {
-            Double d = Double.valueOf(s);
+            Double d = Double.valueOf(s.replace(",", "."));
             return String.valueOf(Math.ceil(d));
         } catch (Exception e) {
             Log.e("ListFragment", "Integer parsing error");
             Log.e("ListFragment", e.getMessage());
-            return null;
+            return "";
         }
     }
 
@@ -97,7 +96,7 @@ public class ListFragment extends Fragment {
             double distance = 0;
             String first_time = null, last_time = null;
 
-            if (result != null) {
+            if (result.size() > 0) {
                 int i = 0;
                 for (TrackingDatabase.TrackingRecordClass r : result) {
                     list_items.add(r.time + ",   " + this.convert(r.latitude, r.longitude));
@@ -111,21 +110,22 @@ public class ListFragment extends Fragment {
                     last_time = r.time;
                     i++;
                 }
-                textDistance.setText("Distance: " + String.valueOf(Math.ceil(distance) / 1000) + " km");
-
-                // Time format HH:MM:SS
-                String first_time_array[] = first_time.split(":");
-                double end_time = Double.valueOf(first_time_array[0]) * 3600 +
-                        Double.valueOf(first_time_array[1]) * 60 +
-                        Double.valueOf(first_time_array[2]);
-                String last_time_array[] = last_time.split(":");
-                double start_time = Double.valueOf(last_time_array[0]) * 3600 +
-                        Double.valueOf(last_time_array[1]) * 60 +
-                        Double.valueOf(last_time_array[2]);
-                double time = end_time - start_time; // in seconds
-                Log.d("ListFragment", "Distance: " + (Math.ceil(distance) / 1000));
-                Log.d("ListFragment", "Time: " + (time / 3600));
-                textSpeed.setText(String.valueOf(RoundTo1Decimal((Math.ceil(distance) / 1000) / (time / 3600))) + " km/h");
+                if (result.size() > 1) {
+                    textDistance.setText("Distance: " + String.valueOf(Math.ceil(distance) / 1000) + " km");
+                    // Time format HH:MM:SS
+                    String first_time_array[] = first_time.split(":");
+                    double end_time = Double.valueOf(first_time_array[0]) * 3600 +
+                            Double.valueOf(first_time_array[1]) * 60 +
+                            Double.valueOf(first_time_array[2]);
+                    String last_time_array[] = last_time.split(":");
+                    double start_time = Double.valueOf(last_time_array[0]) * 3600 +
+                            Double.valueOf(last_time_array[1]) * 60 +
+                            Double.valueOf(last_time_array[2]);
+                    double time = end_time - start_time; // in seconds
+                    Log.d("ListFragment", "Distance: " + (Math.ceil(distance) / 1000));
+                    Log.d("ListFragment", "Time: " + (time / 3600));
+                    textSpeed.setText(String.valueOf(RoundTo1Decimal((Math.ceil(distance) / 1000) / (time / 3600))) + " km/h");
+                }
 
                 adapter = new ArrayAdapter<>(getActivity(), R.layout.fragment_list_item, list_items);
                 list.setAdapter(adapter);
@@ -133,6 +133,7 @@ public class ListFragment extends Fragment {
         } catch (Exception e) {
             Log.e("ListFragment", "Cannot create list");
             Log.e("ListFragment", e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -144,7 +145,6 @@ public class ListFragment extends Fragment {
         buttonRefresh = (Button) my_view.findViewById(R.id.buttonRefresh);
         textDistance = (TextView) my_view.findViewById(R.id.textDistance);
         textSpeed = (TextView) my_view.findViewById(R.id.textSpeed);
-        textSteps = (TextView) my_view.findViewById(R.id.textSteps);
         list = (ListView) my_view.findViewById(R.id.list);
         //mSensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
         //mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);

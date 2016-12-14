@@ -51,12 +51,12 @@ public class MapFragment extends Fragment {
     // Ceil double from string to make int
     private String strip_int(String s) {
         try {
-            Double d = Double.valueOf(s);
+            Double d = Double.valueOf(s.replace(",", "."));
             return String.valueOf(Math.ceil(d));
         } catch (Exception e) {
-            Log.e("ListFragment", "Integer parsing error");
-            Log.e("ListFragment", e.getMessage());
-            return null;
+            Log.e("MapFragment", "Integer parsing error");
+            Log.e("MapFragment", e.getMessage());
+            return "";
         }
     }
 
@@ -109,58 +109,55 @@ public class MapFragment extends Fragment {
                 googleMap = mMap;
 
                 // Check permissions
-                if (ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                        && ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                        && ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
-                    return;
-                }
+                if (ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        && ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        && ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED) {
+                    googleMap.setMyLocationEnabled(true);
+                    googleMap.getUiSettings().setZoomControlsEnabled(true);
+                    googleMap.getUiSettings().setCompassEnabled(true);
+                    googleMap.getUiSettings().setZoomGesturesEnabled(true);
+                    googleMap.getUiSettings().setMyLocationButtonEnabled(true);
+                    googleMap.getUiSettings().setMapToolbarEnabled(false);
 
-                googleMap.setMyLocationEnabled(true);
-                googleMap.getUiSettings().setZoomControlsEnabled(true);
-                googleMap.getUiSettings().setCompassEnabled(true);
-                googleMap.getUiSettings().setZoomGesturesEnabled(true);
-                googleMap.getUiSettings().setMyLocationButtonEnabled(true);
-                googleMap.getUiSettings().setMapToolbarEnabled(false);
+                    ArrayList<TrackingDatabase.TrackingRecordClass> result = TrackingDatabase.select();
 
-                ArrayList<TrackingDatabase.TrackingRecordClass> result = TrackingDatabase.select();
+                    int i = 0;
+                    LatLng last_coords = null;
 
-                int i = 0;
-                LatLng last_coords = null;
-
-                if (result != null) {
-                    for (TrackingDatabase.TrackingRecordClass r : result) {
-                        LatLng coords = new LatLng(r.latitude, r.longitude);
-                        googleMap.addMarker(
-                                new MarkerOptions().position(coords)
-                                        .title("#" + r.id + " " + r.time)
-                                        .snippet(convert(r.latitude, r.longitude))
-                        );
-                        if (i > 0) {
-                            Polyline line = googleMap.addPolyline(new PolylineOptions()
-                                    .add(last_coords, coords)
-                                    .width(5)
-                                    .color(Color.RED));
+                    if (result != null) {
+                        for (TrackingDatabase.TrackingRecordClass r : result) {
+                            LatLng coords = new LatLng(r.latitude, r.longitude);
+                            googleMap.addMarker(
+                                    new MarkerOptions().position(coords)
+                                            .title("#" + r.id + " " + r.time)
+                                            .snippet(convert(r.latitude, r.longitude))
+                            );
+                            if (i > 0) {
+                                Polyline line = googleMap.addPolyline(new PolylineOptions()
+                                        .add(last_coords, coords)
+                                        .width(5)
+                                        .color(Color.RED));
+                            }
+                            last_coords = coords;
+                            i++;
                         }
-                        last_coords = coords;
-                        i++;
+                    }
+                    // For zooming automatically to the location of the marker
+                    if (result.size() > 0) {
+                        LatLng last_pos = new LatLng(result.get(0).latitude, result.get(0).longitude);
+                        CameraPosition cameraPosition = new CameraPosition.Builder()
+                                .target(last_pos)
+                                .zoom(14)
+                                .build();
+                        googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                    } else {
+                        CameraPosition cameraPosition = new CameraPosition.Builder()
+                                .target(new LatLng(51.11, 17.022222))
+                                .zoom(14)
+                                .build();
+                        googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
                     }
                 }
-                // For zooming automatically to the location of the marker
-                if (result.size() > 0) {
-                    LatLng last_pos = new LatLng(result.get(0).latitude, result.get(0).longitude);
-                    CameraPosition cameraPosition = new CameraPosition.Builder()
-                            .target(last_pos)
-                            .zoom(14)
-                            .build();
-                    googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-                } else {
-                    CameraPosition cameraPosition = new CameraPosition.Builder()
-                            .target(new LatLng(51.11, 17.022222))
-                            .zoom(14)
-                            .build();
-                    googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-                }
-
             }
         });
 

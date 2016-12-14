@@ -28,13 +28,6 @@
             android:layout_weight="1"
             android:text="Speed: 0.00 km/h" />
 
-        <TextView
-            android:id="@+id/textSteps"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Steps: 0" />
-
     </LinearLayout>
 
     <Button

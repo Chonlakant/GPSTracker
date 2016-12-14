@@ -126,16 +126,16 @@ public class TrackingService extends Service implements LocationListener {
     // Stop service
     public void stop() {
         try {
-            if (ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this.context, Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED) {
-                if (this.is_working) {
-                    this.location_manager.removeUpdates(TrackingService.this);
-                }
-                this.is_working = false;
-                this.location = null;
-                Log.i("TrackingService", "Background service stopped");
+            if (ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this.context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this.context, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
             }
+            if (this.is_working) {
+                this.location_manager.removeUpdates(TrackingService.this);
+            }
+            this.is_working = false;
+            this.location = null;
+            Log.i("TrackingService", "Background service stopped");
         } catch (Exception e) {
             Log.e("TrackingService", "Cannot stop the background service");
             Log.e("TrackingService", e.getMessage());
