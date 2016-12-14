@@ -11,7 +11,11 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 
+import com.google.android.gms.maps.model.LatLng;
+
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 public class ListFragment extends Fragment {
@@ -19,11 +23,34 @@ public class ListFragment extends Fragment {
     private ListView list;
     private ArrayAdapter<String> adapter;
     private Button buttonRefresh;
+    private TextView textDistance;
+    private TextView textSpeed;
+    private TextView textSteps;
 
     public ListFragment() {
         super();
     }
 
+    // Round to first decimal place
+    double RoundTo1Decimal(double val) {
+        DecimalFormat df1 = new DecimalFormat("###.#");
+        return Double.valueOf(df1.format(val));
+    }
+
+    // Calculate distance between two locations
+    private double getDistance(LatLng a, LatLng b) {
+        Location loc1 = new Location("");
+        loc1.setLatitude(a.latitude);
+        loc1.setLongitude(a.longitude);
+
+        Location loc2 = new Location("");
+        loc2.setLatitude(b.latitude);
+        loc2.setLongitude(b.longitude);
+
+        return Math.abs(loc1.distanceTo(loc2));
+    }
+
+    // Ceil double from string to make int
     private String strip_int(String s) {
         try {
             Double d = Double.valueOf(s);
@@ -62,16 +89,51 @@ public class ListFragment extends Fragment {
     }
 
     private void refresh() {
-        ArrayList<TrackingDatabase.TrackingRecordClass> result = TrackingDatabase.select();
-        ArrayList<String> list_items = new ArrayList<>();
-        if (result != null) {
-            for (TrackingDatabase.TrackingRecordClass r : result) {
-                list_items.add(r.time + ",   " + this.convert(r.latitude, r.longitude));
-            }
-        }
+        try {
+            ArrayList<TrackingDatabase.TrackingRecordClass> result = TrackingDatabase.select();
+            ArrayList<String> list_items = new ArrayList<>();
 
-        adapter = new ArrayAdapter<>(getActivity(), R.layout.fragment_list_item, list_items);
-        list.setAdapter(adapter);
+            LatLng last_coords = null;
+            double distance = 0;
+            String first_time = null, last_time = null;
+
+            if (result != null) {
+                int i = 0;
+                for (TrackingDatabase.TrackingRecordClass r : result) {
+                    list_items.add(r.time + ",   " + this.convert(r.latitude, r.longitude));
+                    LatLng coords = new LatLng(r.latitude, r.longitude);
+                    if (i > 0) {
+                        distance += getDistance(last_coords, coords);
+                    } else {
+                        first_time = r.time;
+                    }
+                    last_coords = coords;
+                    last_time = r.time;
+                    i++;
+                }
+                textDistance.setText("Distance: " + String.valueOf(Math.ceil(distance) / 1000) + " km");
+
+                // Time format HH:MM:SS
+                String first_time_array[] = first_time.split(":");
+                double end_time = Double.valueOf(first_time_array[0]) * 3600 +
+                        Double.valueOf(first_time_array[1]) * 60 +
+                        Double.valueOf(first_time_array[2]);
+                String last_time_array[] = last_time.split(":");
+                double start_time = Double.valueOf(last_time_array[0]) * 3600 +
+                        Double.valueOf(last_time_array[1]) * 60 +
+                        Double.valueOf(last_time_array[2]);
+                double time = end_time - start_time; // in seconds
+                Log.d("ListFragment", "Distance: " + (Math.ceil(distance) / 1000));
+                Log.d("ListFragment", "Time: " + (time / 3600));
+                textSpeed.setText(String.valueOf(RoundTo1Decimal((Math.ceil(distance) / 1000) / (time / 3600))) + " km/h");
+
+                adapter = new ArrayAdapter<>(getActivity(), R.layout.fragment_list_item, list_items);
+                list.setAdapter(adapter);
+            }
+        } catch (Exception e) {
+            Log.e("ListFragment", "Cannot create list");
+            Log.e("ListFragment", e.getMessage());
+        }
     }
 
     @Nullable
@@ -80,7 +142,13 @@ public class ListFragment extends Fragment {
         MainActivity.setToolbarTitle("List");
         my_view = inflater.inflate(R.layout.fragment_list, container, false);
         buttonRefresh = (Button) my_view.findViewById(R.id.buttonRefresh);
+        textDistance = (TextView) my_view.findViewById(R.id.textDistance);
+        textSpeed = (TextView) my_view.findViewById(R.id.textSpeed);
+        textSteps = (TextView) my_view.findViewById(R.id.textSteps);
         list = (ListView) my_view.findViewById(R.id.list);
+        //mSensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
+        //mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+        //mSensorManager.registerListener(this, mSensor, SensorManager.SENSOR_DELAY_FASTEST);
 
         TrackingDatabase.init(getContext());
 

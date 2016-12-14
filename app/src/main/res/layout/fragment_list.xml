@@ -9,6 +9,34 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/textDistance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Distance: 0.0 km" />
+
+        <TextView
+            android:id="@+id/textSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Speed: 0.00 km/h" />
+
+        <TextView
+            android:id="@+id/textSteps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Steps: 0" />
+
+    </LinearLayout>
+
     <Button
         android:id="@+id/buttonRefresh"
         style="@style/Widget.AppCompat.Button.Borderless"

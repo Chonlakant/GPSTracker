@@ -2,6 +2,7 @@ package pwr.chojnacki.robert.gpstracker;
 
 import android.app.Fragment;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -18,6 +19,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 
@@ -32,6 +35,20 @@ public class MapFragment extends Fragment {
         tracking_service = MainActivity.getTS();
     }
 
+    // Calculate distance between two locations
+    private double getDistance(LatLng a, LatLng b) {
+        Location loc1 = new Location("");
+        loc1.setLatitude(a.latitude);
+        loc1.setLongitude(a.longitude);
+
+        Location loc2 = new Location("");
+        loc2.setLatitude(b.latitude);
+        loc2.setLongitude(b.longitude);
+
+        return loc1.distanceTo(loc2);
+    }
+
+    // Ceil double from string to make int
     private String strip_int(String s) {
         try {
             Double d = Double.valueOf(s);
@@ -106,14 +123,26 @@ public class MapFragment extends Fragment {
                 googleMap.getUiSettings().setMapToolbarEnabled(false);
 
                 ArrayList<TrackingDatabase.TrackingRecordClass> result = TrackingDatabase.select();
+
+                int i = 0;
+                LatLng last_coords = null;
+
                 if (result != null) {
                     for (TrackingDatabase.TrackingRecordClass r : result) {
+                        LatLng coords = new LatLng(r.latitude, r.longitude);
                         googleMap.addMarker(
-                                new MarkerOptions().position(
-                                        new LatLng(r.latitude, r.longitude))
+                                new MarkerOptions().position(coords)
                                         .title("#" + r.id + " " + r.time)
                                         .snippet(convert(r.latitude, r.longitude))
                         );
+                        if (i > 0) {
+                            Polyline line = googleMap.addPolyline(new PolylineOptions()
+                                    .add(last_coords, coords)
+                                    .width(5)
+                                    .color(Color.RED));
+                        }
+                        last_coords = coords;
+                        i++;
                     }
                 }
                 // For zooming automatically to the location of the marker
