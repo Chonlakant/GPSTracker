@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.FragmentManager;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.GravityCompat;
@@ -118,7 +117,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
-    @NonNull
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
@@ -130,7 +128,6 @@ public class MainActivity extends AppCompatActivity
             fragment_manager.beginTransaction().replace(R.id.content_frame, new ListFragment()).commit();
             //toolbar.setTitle("List");
         } else if (id == R.id.nav_settings) {
-
             fragment_manager.beginTransaction().replace(R.id.content_frame, new SettingsFragment()).commit();
         } else if (id == R.id.nav_start) {
             tracking_service.start();
@@ -143,7 +140,13 @@ public class MainActivity extends AppCompatActivity
             stop.setEnabled(false);
             Toast.makeText(this, "Tracking turned off.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_clear) {
-
+            if (tracking_service.is_working) {
+                Toast.makeText(this, "Please turn off tracking first.", Toast.LENGTH_LONG).show();
+            } else {
+                TrackingDatabase.deleteAll();
+                fragment_manager.beginTransaction().replace(R.id.content_frame, new ListFragment()).commit();
+                Toast.makeText(this, "Tracking records deleted.", Toast.LENGTH_SHORT).show();
+            }
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -151,7 +154,6 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    @NonNull
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         if (requestCode == 1001) {

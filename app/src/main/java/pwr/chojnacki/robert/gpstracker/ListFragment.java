@@ -14,11 +14,10 @@ import android.widget.ListView;
 import java.util.ArrayList;
 
 public class ListFragment extends Fragment {
-    private static TrackingDatabase db;
     private View my_view;
     private ListView list;
     private ArrayAdapter<String> adapter;
-    private Button buttonClear;
+    private Button buttonRefresh;
 
     public ListFragment() {
         super();
@@ -67,15 +66,7 @@ public class ListFragment extends Fragment {
         return result;
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        MainActivity.setToolbarTitle("List");
-        my_view = inflater.inflate(R.layout.fragment_list, container, false);
-        list = (ListView) my_view.findViewById(R.id.list);
-
-        TrackingDatabase.init(getContext());
-
+    private void refresh() {
         ArrayList<TrackingDatabase.TrackingRecordClass> result = TrackingDatabase.select();
         ArrayList<String> list_items = new ArrayList<>();
         if (result != null) {
@@ -86,6 +77,27 @@ public class ListFragment extends Fragment {
 
         adapter = new ArrayAdapter<>(getActivity(), R.layout.fragment_list_item, list_items);
         list.setAdapter(adapter);
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        MainActivity.setToolbarTitle("List");
+        my_view = inflater.inflate(R.layout.fragment_list, container, false);
+        buttonRefresh = (Button) my_view.findViewById(R.id.buttonRefresh);
+        list = (ListView) my_view.findViewById(R.id.list);
+
+        TrackingDatabase.init(getContext());
+
+        // On Aplly click
+        buttonRefresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                refresh();
+            }
+        });
+
+        refresh();
 
         return my_view;
     }

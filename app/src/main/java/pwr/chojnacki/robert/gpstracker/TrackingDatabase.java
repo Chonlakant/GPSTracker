@@ -89,8 +89,17 @@ public final class TrackingDatabase {
             values.put(TrackingRecord.COLUMN_NAME_LATITUDE, latitude);
             values.put(TrackingRecord.COLUMN_NAME_LONGITUDE, longitude);
             // Insert the new row, returning the primary key value of the new row
-            long newRowId = db.insert(TrackingRecord.TABLE_NAME, null, values);
-            return newRowId;
+            return db.insert(TrackingRecord.TABLE_NAME, null, values);
+        } else {
+            Log.e("TrackingDatabase", "Helper class not initialized");
+            return -1;
+        }
+    }
+
+    public static long deleteAll() {
+        if (helper != null) {
+            db = helper.getWritableDatabase();
+            return db.delete(TrackingRecord.TABLE_NAME, null, null);
         } else {
             Log.e("TrackingDatabase", "Helper class not initialized");
             return -1;
@@ -106,8 +115,7 @@ public final class TrackingDatabase {
             // Specify arguments in placeholder order
             String[] selectionArgs = { String.valueOf(id) };
             // Issue SQL statement
-            long deletedRowId = db.delete(TrackingRecord.TABLE_NAME, selection, selectionArgs);
-            return deletedRowId;
+            return db.delete(TrackingRecord.TABLE_NAME, selection, selectionArgs);
         } else {
             Log.e("TrackingDatabase", "Helper class not initialized");
             return -1;
