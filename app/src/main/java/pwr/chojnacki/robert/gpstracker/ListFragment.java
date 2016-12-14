@@ -1,6 +1,7 @@
 package pwr.chojnacki.robert.gpstracker;
 
 import android.app.Fragment;
+import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -22,17 +23,11 @@ public class ListFragment extends Fragment {
     public ListFragment() {
         super();
     }
-    // Strip int after 2 digits
-    private String strip_int(int i) {
+
+    private String strip_int(String s) {
         try {
-            String s = String.valueOf(i);
-            String r;
-            if (s.length() > 1) {
-                r = "" + s.charAt(0) + s.charAt(1);
-            } else {
-                r = "" + s.charAt(0);
-            }
-            return r;
+            Double d = Double.valueOf(s);
+            return String.valueOf(Math.ceil(d));
         } catch (Exception e) {
             Log.e("ListFragment", "Integer parsing error");
             Log.e("ListFragment", e.getMessage());
@@ -43,12 +38,12 @@ public class ListFragment extends Fragment {
     // Converting decimal coordinates to degrees
     private String convert(double latitude, double longitude) {
         final String DEGREE = "\u00b0";
-        int lat_d = (int) latitude;
-        int lat_m = (int) ((latitude - lat_d) * 60);
-        int lat_s = (int) (latitude - lat_d - lat_m) * 3600;
-        int lng_d = (int) longitude;
-        int lng_m = (int) ((longitude - lng_d) * 60);
-        int lng_s = (int) (longitude - lng_d - lng_m) * 3600;
+        Location location = new Location("");
+        location.setLatitude(latitude);
+        location.setLongitude(longitude);
+
+        String strLatitude[] = Location.convert(location.getLatitude(), Location.FORMAT_SECONDS).split(":");
+        String strLongitude[] = Location.convert(location.getLongitude(), Location.FORMAT_SECONDS).split(":");
         String lat_symbol, lng_symbol, result;
 
         if (latitude >= 0)
@@ -60,8 +55,8 @@ public class ListFragment extends Fragment {
         else
             lng_symbol = "W";
 
-        result = "" + Math.abs(lat_d) + DEGREE + " " + strip_int(Math.abs(lat_m)) + "' " + strip_int(Math.abs(lat_s)) + "'' " + lat_symbol;
-        result += ",  " + Math.abs(lng_d) + DEGREE + " " + strip_int(Math.abs(lng_m)) + "' " + strip_int(Math.abs(lng_s)) + "'' " + lng_symbol;
+        result = "" + strLatitude[0] + DEGREE + " " + strip_int(strLatitude[1]) + "' " + strip_int(strLatitude[2]) + "'' " + lat_symbol;
+        result += ",  " + strLongitude[0] + DEGREE + " " + strip_int(strLongitude[1]) + "' " + strip_int(strLongitude[2]) + "'' " + lng_symbol;
 
         return result;
     }

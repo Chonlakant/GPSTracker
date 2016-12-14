@@ -20,14 +20,14 @@
         <menu>
             <item
                 android:id="@+id/nav_start"
-                android:title="Start" />
+                android:title="Start recording" />
             <item
                 android:id="@+id/nav_stop"
                 android:enabled="false"
-                android:title="Stop" />
+                android:title="Stop recording" />
             <item
                 android:id="@+id/nav_clear"
-                android:title="Clear" />
+                android:title="Clear records" />
         </menu>
     </item>
 

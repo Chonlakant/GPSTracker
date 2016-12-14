@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity
         start = nav_Menu.findItem(R.id.nav_start);
         stop = nav_Menu.findItem(R.id.nav_stop);
         clear = nav_Menu.findItem(R.id.nav_clear);
+        fragment_manager.beginTransaction().replace(R.id.content_frame, new pwr.chojnacki.robert.gpstracker.MapFragment()).commit();
     }
 
     @Override
@@ -123,10 +124,9 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_map) {
-            //toolbar.setTitle("Map");
+            fragment_manager.beginTransaction().replace(R.id.content_frame, new pwr.chojnacki.robert.gpstracker.MapFragment()).commit();
         } else if (id == R.id.nav_list) {
             fragment_manager.beginTransaction().replace(R.id.content_frame, new ListFragment()).commit();
-            //toolbar.setTitle("List");
         } else if (id == R.id.nav_settings) {
             fragment_manager.beginTransaction().replace(R.id.content_frame, new SettingsFragment()).commit();
         } else if (id == R.id.nav_start) {
